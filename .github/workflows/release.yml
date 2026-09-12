@@ -54,11 +54,29 @@ jobs:
             DesktopPet-win-x64.zip
             dist\DesktopPet-Setup.exe
 
+      - name: Extract release notes from CHANGELOG
+        shell: pwsh
+        run: |
+          $version = "${{ steps.ver.outputs.version }}"
+          $out = @()
+          $capturing = $false
+          foreach ($line in (Get-Content 'docs/CHANGELOG.md')) {
+            if ($line -match '^##\s+\[([^\]]+)\]') {
+              if ($capturing) { break }
+              if ($matches[1] -eq $version) { $capturing = $true }
+              continue
+            }
+            if ($capturing) { $out += $line }
+          }
+          if (-not $out) { $out = @("DesktopPet v$version") }
+          ($out -join "`n").Trim() | Set-Content -Path release_notes.md -Encoding UTF8
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          name: DesktopPet v${{ steps.ver.outputs.version }}
+          body_path: release_notes.md
           files: |
             DesktopPet-win-x64.zip
             dist/DesktopPet-Setup.exe
-          generate_release_notes: true
