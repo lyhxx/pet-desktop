@@ -219,7 +219,7 @@ static void NormalizeAnchors(Bitmap bmp)
 
 static void MakeIco(string input, string output)
 {
-    int[] sizes = { 16, 24, 32, 48, 64, 128, 256 };
+    int[] sizes = { 16, 20, 24, 32, 40, 48, 64, 128, 256 };
     using var src = new Bitmap(input);
 
     var entries = new List<(int Size, byte[] Data)>();

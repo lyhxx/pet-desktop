@@ -11,7 +11,7 @@
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>DesktopPet</AssemblyName>
     <RootNamespace>DesktopPet</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
