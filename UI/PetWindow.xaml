@@ -1,0 +1,78 @@
+<Window x:Class="DesktopPet.UI.PetWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DesktopPet"
+        Width="256"
+        Height="256"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+
+    <Viewbox Stretch="Uniform">
+        <Grid x:Name="PetRoot" Width="256" Height="256">
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="FacingTransform"
+                            ScaleX="1" ScaleY="1"
+                            CenterX="128" CenterY="236" />
+        </Grid.RenderTransform>
+
+        <Image x:Name="SpriteImage"
+               Stretch="None"
+               Visibility="Collapsed"
+               RenderOptions.BitmapScalingMode="HighQuality" />
+
+        <Canvas x:Name="Placeholder" Width="256" Height="256">
+            <Path Data="M 178,196 C 214,188 224,150 204,132"
+                  Stroke="#E8913A" StrokeThickness="16"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+
+            <Ellipse Width="134" Height="96" Canvas.Left="61" Canvas.Top="140" Fill="#F6A24B" />
+            <Ellipse Width="74" Height="62" Canvas.Left="91" Canvas.Top="174" Fill="#FFF1DC" />
+
+            <Polygon Points="84,86 72,28 124,60" Fill="#F6A24B" />
+            <Polygon Points="172,86 184,28 132,60" Fill="#F6A24B" />
+            <Polygon Points="88,78 80,42 116,62" Fill="#F7C9A6" />
+            <Polygon Points="168,78 176,42 140,62" Fill="#F7C9A6" />
+
+            <Ellipse Width="104" Height="92" Canvas.Left="76" Canvas.Top="62" Fill="#F6A24B" />
+
+            <Ellipse Width="14" Height="18" Canvas.Left="102" Canvas.Top="100" Fill="#3B2A1A" />
+            <Ellipse Width="14" Height="18" Canvas.Left="140" Canvas.Top="100" Fill="#3B2A1A" />
+            <Ellipse Width="5" Height="6" Canvas.Left="106" Canvas.Top="103" Fill="#FFFFFF" />
+            <Ellipse Width="5" Height="6" Canvas.Left="144" Canvas.Top="103" Fill="#FFFFFF" />
+
+            <Polygon Points="122,124 134,124 128,133" Fill="#E58AA0" />
+
+            <Canvas x:Name="ScarfLayer" Visibility="Collapsed">
+                <Rectangle Width="76" Height="16" Canvas.Left="90" Canvas.Top="146"
+                           RadiusX="8" RadiusY="8" Fill="#6BBF59" />
+                <Rectangle Width="16" Height="34" Canvas.Left="96" Canvas.Top="156"
+                           RadiusX="6" RadiusY="6" Fill="#58A84A" />
+            </Canvas>
+
+            <Canvas x:Name="GlassesLayer" Visibility="Collapsed">
+                <Rectangle Width="26" Height="20" Canvas.Left="94" Canvas.Top="99"
+                           RadiusX="7" RadiusY="7" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
+                <Rectangle Width="26" Height="20" Canvas.Left="136" Canvas.Top="99"
+                           RadiusX="7" RadiusY="7" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
+                <Line X1="120" Y1="109" X2="136" Y2="109" Stroke="#3B3B3B" StrokeThickness="3" />
+            </Canvas>
+
+            <Canvas x:Name="HatLayer" Visibility="Collapsed">
+                <Polygon Points="90,58 128,20 166,58" Fill="#E85555" />
+                <Rectangle Width="92" Height="10" Canvas.Left="82" Canvas.Top="54"
+                           RadiusX="5" RadiusY="5" Fill="#C94040" />
+                <Ellipse Width="16" Height="16" Canvas.Left="120" Canvas.Top="12" Fill="#FFF3E2" />
+            </Canvas>
+        </Canvas>
+
+        <Canvas x:Name="EffectCanvas" Width="256" Height="256" IsHitTestVisible="False" />
+        </Grid>
+    </Viewbox>
+</Window>
