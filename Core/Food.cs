@@ -6,7 +6,7 @@ public sealed record Food(string Name, double Hunger, double Mood);
 public static class Foods
 {
     public static readonly Food Fish = new("小鱼干", 28, 8);
-    public static readonly Food Kibble = new("猫粮", 38, 4);
+    public static readonly Food Kibble = new("鲜虾", 38, 4);
     public static readonly Food Milk = new("牛奶", 16, 10);
 
     public static IReadOnlyList<Food> All { get; } = new[] { Fish, Kibble, Milk };

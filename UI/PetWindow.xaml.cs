@@ -27,6 +27,16 @@ public partial class PetWindow : Window, IPetView
     private const int DragThreshold = 4;
     private const double MaxFrameDelta = 0.25;
     private const double SleepEffectInterval = 3.0;
+    private const double OneShotHoldSeconds = 0.25;
+
+    /// <summary>这些剪辑会持续循环或由其它逻辑接管，不做"播完回待机"。</summary>
+    private static readonly HashSet<string> PersistentClips = new(StringComparer.OrdinalIgnoreCase)
+    {
+        AnimationClips.Idle, AnimationClips.Doze, AnimationClips.Blink,
+        AnimationClips.Walk, AnimationClips.WalkSmall, AnimationClips.Trot,
+        AnimationClips.MoveFast, AnimationClips.MoveBack, AnimationClips.Turn,
+        AnimationClips.Eat, AnimationClips.Sleep
+    };
 
     private double _anchorX = BaseAnchorX;
     private double _anchorY = BaseAnchorY;
@@ -41,6 +51,9 @@ public partial class PetWindow : Window, IPetView
 
     private TimeSpan _lastTick;
     private double _sleepEffectTimer;
+    private double _blinkCountdown = 3.0;
+    private bool _blinking;
+    private double _oneShotHold;
 
     private bool _pressed;
     private bool _dragging;
@@ -111,18 +124,15 @@ public partial class PetWindow : Window, IPetView
     {
         ApplySettings();
 
-        Rect screen = WindowManager.GetVirtualScreenDips(this);
+        // 活动范围用工作区（去掉任务栏），宠物站在任务栏上沿而不是屏幕最底部。
+        Rect work = WindowManager.GetWorkAreaDips(this);
+        ApplyBounds(work);
 
-        _controller.SetBounds(
-            screen.Left + _anchorX,
-            screen.Right - _anchorX,
-            screen.Top + _anchorY,
-            screen.Bottom);
+        // 只恢复水平位置；竖直方向每次启动都回到地面（任务栏上沿），
+        // 避免上次拖到半空后一直悬在屏幕中间。
+        double startX = _session.HasPosition ? _session.X : work.Left + work.Width / 2;
 
-        double startX = _session.HasPosition ? _session.X : screen.Left + screen.Width / 2;
-        double startY = _session.HasPosition ? _session.Y : screen.Bottom - 8;
-
-        _controller.PlaceAt(startX, startY);
+        _controller.PlaceAt(startX, work.Bottom);
         _controller.Start();
 
         _lastTick = _clock.Elapsed;
@@ -167,7 +177,65 @@ public partial class PetWindow : Window, IPetView
 
         _animation.Tick(dt);
         UpdateAmbientEffects(dt);
+        UpdateBlink(dt);
+        UpdateOneShot(dt);
     }
+
+    /// <summary>
+    /// 一次性动作（张望 / 理毛 / 停下等）播完后回到循环的待机，
+    /// 避免停在最后一帧看起来像"卡住"。
+    /// </summary>
+    private void UpdateOneShot(double dt)
+    {
+        if (_animation.CurrentClipName is not { } clip ||
+            PersistentClips.Contains(clip) ||
+            !_animation.IsFinished)
+        {
+            _oneShotHold = 0;
+            return;
+        }
+
+        _oneShotHold += dt;
+        if (_oneShotHold < OneShotHoldSeconds) return;
+
+        _oneShotHold = 0;
+        PlayAnimation(AnimationClips.Idle);
+    }
+
+    /// <summary>待机时偶尔播放眨眼，让静止画面有生气（用 Idle 图集的 Blink 帧）。</summary>
+    private void UpdateBlink(double dt)
+    {
+        bool canBlink = !_pressed && !_menuOpen
+            && _controller.Behavior.State == BehaviorState.Idle;
+
+        if (!canBlink)
+        {
+            _blinking = false;
+            _blinkCountdown = NextBlinkDelay();
+            return;
+        }
+
+        if (_blinking)
+        {
+            if (!_animation.IsFinished) return;
+            _blinking = false;
+            PlayAnimation(AnimationClips.Idle);
+            _blinkCountdown = NextBlinkDelay();
+            return;
+        }
+
+        _blinkCountdown -= dt;
+        if (_blinkCountdown > 0) return;
+
+        _blinkCountdown = NextBlinkDelay();
+        if (PlayAnimation(AnimationClips.Blink) &&
+            _animation.CurrentClipName == AnimationClips.Blink)
+        {
+            _blinking = true;
+        }
+    }
+
+    private static double NextBlinkDelay() => 2.5 + Random.Shared.NextDouble() * 4.5;
 
     private void UpdateAmbientEffects(double dt)
     {
@@ -200,9 +268,10 @@ public partial class PetWindow : Window, IPetView
 
     public bool PlayAnimation(string clipName)
     {
-        // 对应图集尚未制作时，回退到 Idle，保持形象一致，而不是切回占位猫。
-        if (_animation.Play(clipName) || _animation.Play("Idle"))
+        // 对应图集尚未制作时，沿回退链降级（如 Sleep → Doze → Idle），保持形象一致。
+        foreach (string candidate in AnimationClips.Chain(clipName))
         {
+            if (!_animation.Play(candidate)) continue;
             SpriteImage.Visibility = Visibility.Visible;
             Placeholder.Visibility = Visibility.Collapsed;
             return true;
@@ -277,10 +346,24 @@ public partial class PetWindow : Window, IPetView
 
     public void RepositionToCenter()
     {
-        Rect screen = WindowManager.GetVirtualScreenDips(this);
-        _controller.NotifyUserMoved(screen.Left + screen.Width / 2, screen.Bottom - 8);
+        RefreshBounds();
+        Rect work = WindowManager.GetWorkAreaDips(this);
+        _controller.NotifyUserMoved(work.Left + work.Width / 2, work.Bottom);
         AppServices.RequestSave?.Invoke();
     }
+
+    /// <summary>把活动范围限制在工作区（任务栏之上）。</summary>
+    private void ApplyBounds(Rect work)
+    {
+        _controller.SetBounds(
+            work.Left + _anchorX,
+            work.Right - _anchorX,
+            work.Top + _anchorY,
+            work.Bottom);
+    }
+
+    /// <summary>按窗口当前所在显示器重新计算活动范围（拖到别的屏幕后调用）。</summary>
+    private void RefreshBounds() => ApplyBounds(WindowManager.GetWorkAreaDips(this));
 
     public void OpenSettings()
     {
@@ -360,7 +443,7 @@ public partial class PetWindow : Window, IPetView
         double menuWidth = _menuWindow.Width;
         double menuHeight = _menuWindow.Height;
 
-        // 按可见猫身的边缘定位，让弧线贴近宠物而不是贴窗口边。
+        // 按可见宠物身体的边缘定位，让弧线贴近宠物而不是贴窗口边。
         double catRight = Left + Width * 0.82;
         double catLeft = Left + Width * 0.18;
 
@@ -514,6 +597,8 @@ public partial class PetWindow : Window, IPetView
 
         if (_dragging)
         {
+            // 可能拖到了另一块显示器，先按新显示器的工作区更新活动范围。
+            RefreshBounds();
             _controller.NotifyUserMoved(Left + _anchorX, Top + _anchorY);
             AppServices.RequestSave?.Invoke();
         }

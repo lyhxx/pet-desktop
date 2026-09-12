@@ -43,8 +43,8 @@
             <TextBlock Text="🐟" FontFamily="Segoe UI Emoji" FontSize="19" />
         </Button>
         <Button x:Name="KibbleButton" Style="{StaticResource CircleButton}" Click="OnKibble"
-                Visibility="Collapsed" ToolTip="猫粮" ToolTipService.InitialShowDelay="120" ToolTipService.ShowDuration="5000">
-            <TextBlock Text="🍚" FontFamily="Segoe UI Emoji" FontSize="20" />
+                Visibility="Collapsed" ToolTip="鲜虾" ToolTipService.InitialShowDelay="120" ToolTipService.ShowDuration="5000">
+            <TextBlock Text="🦐" FontFamily="Segoe UI Emoji" FontSize="19" />
         </Button>
         <Button x:Name="MilkButton" Style="{StaticResource CircleButton}" Click="OnMilk"
                 Visibility="Collapsed" ToolTip="牛奶" ToolTipService.InitialShowDelay="120" ToolTipService.ShowDuration="5000">

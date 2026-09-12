@@ -28,47 +28,58 @@
                RenderOptions.BitmapScalingMode="HighQuality" />
 
         <Canvas x:Name="Placeholder" Width="256" Height="256">
-            <Path Data="M 178,196 C 214,188 224,150 204,132"
-                  Stroke="#E8913A" StrokeThickness="16"
-                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+            <Ellipse Width="34" Height="18" Canvas.Left="96" Canvas.Top="218" Fill="#F2A93B" />
+            <Ellipse Width="34" Height="18" Canvas.Left="128" Canvas.Top="218" Fill="#F2A93B" />
 
-            <Ellipse Width="134" Height="96" Canvas.Left="61" Canvas.Top="140" Fill="#F6A24B" />
-            <Ellipse Width="74" Height="62" Canvas.Left="91" Canvas.Top="174" Fill="#FFF1DC" />
+            <Ellipse Width="122" Height="124" Canvas.Left="67" Canvas.Top="106" Fill="#3D4662" />
+            <Ellipse Width="86" Height="100" Canvas.Left="85" Canvas.Top="124" Fill="#FCF5EB" />
 
-            <Polygon Points="84,86 72,28 124,60" Fill="#F6A24B" />
-            <Polygon Points="172,86 184,28 132,60" Fill="#F6A24B" />
-            <Polygon Points="88,78 80,42 116,62" Fill="#F7C9A6" />
-            <Polygon Points="168,78 176,42 140,62" Fill="#F7C9A6" />
+            <Ellipse Width="46" Height="80" Canvas.Left="58" Canvas.Top="118" Fill="#3D4968">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="18" CenterX="23" CenterY="10" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse Width="40" Height="70" Canvas.Left="160" Canvas.Top="120" Fill="#3D4968">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="-16" CenterX="20" CenterY="10" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
 
-            <Ellipse Width="104" Height="92" Canvas.Left="76" Canvas.Top="62" Fill="#F6A24B" />
+            <Ellipse Width="116" Height="108" Canvas.Left="70" Canvas.Top="40" Fill="#4A5676" />
+            <Ellipse Width="98" Height="80" Canvas.Left="79" Canvas.Top="62" Fill="#FCF5EB" />
 
-            <Ellipse Width="14" Height="18" Canvas.Left="102" Canvas.Top="100" Fill="#3B2A1A" />
-            <Ellipse Width="14" Height="18" Canvas.Left="140" Canvas.Top="100" Fill="#3B2A1A" />
-            <Ellipse Width="5" Height="6" Canvas.Left="106" Canvas.Top="103" Fill="#FFFFFF" />
-            <Ellipse Width="5" Height="6" Canvas.Left="144" Canvas.Top="103" Fill="#FFFFFF" />
+            <Polygon Points="106,50 116,20 130,52" Fill="#4A5676" />
 
-            <Polygon Points="122,124 134,124 128,133" Fill="#E58AA0" />
+            <Ellipse Width="22" Height="26" Canvas.Left="100" Canvas.Top="86" Fill="#2B3038" />
+            <Ellipse Width="22" Height="26" Canvas.Left="134" Canvas.Top="86" Fill="#2B3038" />
+            <Ellipse Width="8" Height="9" Canvas.Left="105" Canvas.Top="90" Fill="#FFFFFF" />
+            <Ellipse Width="8" Height="9" Canvas.Left="139" Canvas.Top="90" Fill="#FFFFFF" />
+
+            <Ellipse Width="18" Height="11" Canvas.Left="90" Canvas.Top="110" Fill="#F3B7AE" Opacity="0.8" />
+            <Ellipse Width="18" Height="11" Canvas.Left="148" Canvas.Top="110" Fill="#F3B7AE" Opacity="0.8" />
+
+            <Polygon Points="124,118 150,126 124,134" Fill="#F2A93B" />
 
             <Canvas x:Name="ScarfLayer" Visibility="Collapsed">
-                <Rectangle Width="76" Height="16" Canvas.Left="90" Canvas.Top="146"
+                <Rectangle Width="80" Height="16" Canvas.Left="88" Canvas.Top="150"
                            RadiusX="8" RadiusY="8" Fill="#6BBF59" />
-                <Rectangle Width="16" Height="34" Canvas.Left="96" Canvas.Top="156"
+                <Rectangle Width="16" Height="34" Canvas.Left="96" Canvas.Top="160"
                            RadiusX="6" RadiusY="6" Fill="#58A84A" />
             </Canvas>
 
             <Canvas x:Name="GlassesLayer" Visibility="Collapsed">
-                <Rectangle Width="26" Height="20" Canvas.Left="94" Canvas.Top="99"
-                           RadiusX="7" RadiusY="7" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
-                <Rectangle Width="26" Height="20" Canvas.Left="136" Canvas.Top="99"
-                           RadiusX="7" RadiusY="7" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
-                <Line X1="120" Y1="109" X2="136" Y2="109" Stroke="#3B3B3B" StrokeThickness="3" />
+                <Rectangle Width="30" Height="24" Canvas.Left="96" Canvas.Top="84"
+                           RadiusX="8" RadiusY="8" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
+                <Rectangle Width="30" Height="24" Canvas.Left="130" Canvas.Top="84"
+                           RadiusX="8" RadiusY="8" Stroke="#3B3B3B" StrokeThickness="3" Fill="#55FFFFFF" />
+                <Line X1="126" Y1="96" X2="130" Y2="96" Stroke="#3B3B3B" StrokeThickness="3" />
             </Canvas>
 
             <Canvas x:Name="HatLayer" Visibility="Collapsed">
-                <Polygon Points="90,58 128,20 166,58" Fill="#E85555" />
-                <Rectangle Width="92" Height="10" Canvas.Left="82" Canvas.Top="54"
+                <Polygon Points="88,56 128,14 168,56" Fill="#E85555" />
+                <Rectangle Width="96" Height="10" Canvas.Left="80" Canvas.Top="52"
                            RadiusX="5" RadiusY="5" Fill="#C94040" />
-                <Ellipse Width="16" Height="16" Canvas.Left="120" Canvas.Top="12" Fill="#FFF3E2" />
+                <Ellipse Width="16" Height="16" Canvas.Left="120" Canvas.Top="6" Fill="#FFF3E2" />
             </Canvas>
         </Canvas>
 

@@ -85,21 +85,19 @@ public sealed class TrayManager : IDisposable
             g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.Clear(Drawing.Color.Transparent);
 
-            using var body = new Drawing.SolidBrush(Drawing.Color.FromArgb(246, 162, 75));
-            using var ear = new Drawing.SolidBrush(Drawing.Color.FromArgb(232, 145, 58));
-            using var eye = new Drawing.SolidBrush(Drawing.Color.FromArgb(59, 42, 26));
+            using var body = new Drawing.SolidBrush(Drawing.Color.FromArgb(61, 70, 98));
+            using var belly = new Drawing.SolidBrush(Drawing.Color.FromArgb(252, 245, 235));
+            using var beak = new Drawing.SolidBrush(Drawing.Color.FromArgb(242, 169, 59));
+            using var eye = new Drawing.SolidBrush(Drawing.Color.FromArgb(43, 48, 56));
 
-            g.FillPolygon(ear, new[]
+            g.FillEllipse(body, 3, 4, 26, 26);
+            g.FillEllipse(belly, 9, 12, 14, 18);
+            g.FillEllipse(eye, 10, 11, 4, 5);
+            g.FillEllipse(eye, 18, 11, 4, 5);
+            g.FillPolygon(beak, new[]
             {
-                new Drawing.Point(6, 12), new Drawing.Point(9, 1), new Drawing.Point(16, 10)
+                new Drawing.Point(14, 17), new Drawing.Point(21, 19), new Drawing.Point(14, 21)
             });
-            g.FillPolygon(ear, new[]
-            {
-                new Drawing.Point(26, 12), new Drawing.Point(23, 1), new Drawing.Point(16, 10)
-            });
-            g.FillEllipse(body, 3, 7, 26, 22);
-            g.FillEllipse(eye, 10, 15, 4, 5);
-            g.FillEllipse(eye, 18, 15, 4, 5);
         }
 
         IntPtr handle = bitmap.GetHicon();

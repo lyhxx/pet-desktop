@@ -23,8 +23,10 @@ dotnet run
 ```
 Core/        核心逻辑，不依赖任何 WPF 控件
   BehaviorState.cs   行为枚举
+  Gait.cs            走动步态（普通 / 小步 / 小跑 / 快走）
+  AnimationClips.cs  行为 / 步态 → 剪辑名映射 + 图集缺失回退链
   PetState.cs        养成数值与衰减 / 离线结算
-  PetBehavior.cs     行为系统（加权随机 + 需求影响）
+  PetBehavior.cs     行为系统（加权随机 + 需求影响 + 休息冷却）
   PetController.cs   协调行为 / 状态 / 视图
   IPetView.cs        核心与 UI 的边界
   Food.cs            食物定义
@@ -57,7 +59,8 @@ Save/        本地 JSON 存档
   SaveManager.cs     读写
 Assets/      图标与图集
   app.ico / app-icon.png
-  Pet/Pet_Idle.png      猫图集
+  Pet/Pet_Idle.png      企鹅待机图集（Idle / 眨眼 / 张望 / 理羽等）
+  Pet/Pet_Move.png      企鹅移动图集（行走 / 小跑 / 转身 / 停下等）
   Pet/animations.json   动画表
 installer/   Inno Setup 脚本
 tools/       SpriteSlicer 切图工具
@@ -139,25 +142,49 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 - `sheet`：`sheets` 里的键；图集文件放在 `Assets/Pet/`。
 - `frames`：1-based 帧号数组。
 - `fps`：帧率。
-- `loop`：是否循环；不循环的短动作播完停在最后一帧。
+- `loop`：是否循环；不循环的短动作播完后由视图自动回到循环的 `Idle`（`PetWindow.UpdateOneShot`），不会停在最后一帧。
 
 ### 4.7 Pet_Idle 动作映射
 
-| 动作 | 帧号 | fps | 循环 |
-|---|---|---|---|
-| 待机 | 01-06, 09-14 | 6 | 是 |
-| 眨眼 | 07-08 | 6 | 否 |
-| 东张西望 | 15-20 | 6 | 否 |
-| 伸懒腰 | 21-26 | 5 | 否 |
-| 整理毛发 | 27-32 | 5 | 否 |
-| 好奇待机 | 33-38 | 5 | 否 |
-| 尾巴动作 | 39-44 | 6 | 否 |
-| 轻微开心 | 45-48 | 5 | 否 |
-| 发呆 | 49-54 | 4 | 是 |
-| 小动作 | 55-60 | 5 | 否 |
-| 特殊待机 | 61-64 | 5 | 否 |
+图集：`Pet_Idle.png`；`animations.json` 中 `sheet` 为 `idle`。
 
-后续图集（`Pet_Move` / `Pet_Action` / `Pet_EatSleep`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会**回退到 Idle**，不会切回占位形象。
+![Pet_Idle 帧号预览](images/pet-idle-frames.jpg)
+
+| 格内动作 | 帧号 | 剪辑名 | 行为状态 | fps | 循环 |
+|---|---|---|---|---|---|
+| 待机 | 01-06, 09-14 | `Idle` | `Idle` | 6 | 是 |
+| 眨眼 | 07-08 | `Blink` | （待机时叠加，见 7） | 6 | 否 |
+| 东张西望 | 15-20 | `LookAround` | `LookAround` | 6 | 否 |
+| 伸懒腰 | 21-26 | `Stretch` | `Stretch` | 5 | 否 |
+| 整理羽毛 | 27-32 | `Groom` | `Groom` | 5 | 否 |
+| 好奇待机 | 33-38 | `Curious` | `Curious` | 5 | 否 |
+| 小翅膀动作 | 39-44 | `Tail` | `Tail` | 6 | 否 |
+| 轻微开心 | 45-48 | `Happy` | `Happy` | 5 | 否 |
+| 发呆 | 49-54 | `Doze` | `Sit` | 4 | 是 |
+| 小动作 | 55-60 | `Fidget` | `Fidget` | 5 | 否 |
+| 特殊待机 | 61-64 | `Special` | `Special` | 5 | 否 |
+
+### 4.8 Pet_Move 动作映射
+
+图集：`Pet_Move.png`；`animations.json` 中 `sheet` 为 `move`。
+
+![Pet_Move 帧号预览](images/pet-move-frames.jpg)
+
+| 格内动作 | 帧号 | 剪辑名 | 行为状态 / 步态 | fps | 循环 |
+|---|---|---|---|---|---|
+| 行走 01-16 | 01-16 | `Walk` | `Walk` / `Gait.Walk` | 12 | 是 |
+| 小步快走 | 17-24 | `WalkSmall` | `Gait.Small` | 12 | 是 |
+| 快速移动 | 25-32 | `MoveFast` | `Gait.Fast` | 14 | 是 |
+| 减速 | 33-36 | `SlowDown` | （备用） | 10 | 否 |
+| 停止 | 37-40 | `Stop` | （备用） | 10 | 否 |
+| 转身 | 41-48 | `Turn` | `Turn` | 10 | 否 |
+| 回头移动 | 49-54 | `MoveBack` | （备用） | 10 | 是 |
+| 小跑 | 55-60 | `Trot` | `Gait.Trot` | 12 | 是 |
+| 移动后停下 | 61-64 | `StopAfterMove` | `Stop` | 10 | 否 |
+
+> 剪辑名 ↔ 行为/步态的映射集中在 `Core/AnimationClips.cs`，改动那里即可，不必改行为逻辑。
+
+后续图集（`Pet_Action` / `Pet_EatSleep` / `Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
 
 ## 5. 切图工具 SpriteSlicer
 
@@ -216,10 +243,31 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 `PetBehavior` 每个 tick 用**加权随机 + 需求影响**挑选行为，而非固定时间轴：
 
 - 精力越低 → 越可能睡觉、坐下
-- 精力越高（alertness）→ 越可能出现张望 / 好奇 / 尾巴 / 理毛 / 小动作 / 伸懒腰 / 特殊待机
+- 精力越高（alertness）→ 越可能出现张望 / 好奇 / 扇翅 / 理羽 / 小动作 / 伸懒腰 / 特殊待机
 - 走动有 **10~24 秒冷却**，单次距离 60~240px，走完安静待机数秒（避免一直来回走）
+- 走动带**步态**（`Gait`）：普通 / 小步快走 / 小跑 / 快速移动，按距离与随机选择，速度随之变化
+- 方向与当前朝向相反时，先进入 `Turn`（转身）再走；到达目标后进入 `Stop`（停下）再回待机
+- 每个主动动作（走动 / 张望 / 理羽等）结束后先回待机并进入 **2~5 秒休息冷却**，冷却期间几乎只待机/坐着，避免动作一个接一个连播
+- 一次性动作剪辑播完后由视图自动回到循环的 `Idle`（`PetWindow.UpdateOneShot`），不会停在最后一帧像"卡住"
 - 互动时用 `OverrideState` 强制进入吃东西 / 被摸等状态，结束后回到自主行为
 - 悬停菜单打开时 `Autonomous = false`，暂停自主走动但互动照常进行
+- 待机时视图层会不定时播放 `Blink`（眨眼），见 `PetWindow.UpdateBlink`
+
+### 7.1 行为 / 步态 → 剪辑映射
+
+映射集中在 `Core/AnimationClips.cs`，剪辑名与 `animations.json` 对应：
+
+| 行为 / 步态 | 剪辑 | 所属图集 |
+|---|---|---|
+| Idle | Idle | idle |
+| Walk / Gait.Small / Gait.Trot / Gait.Fast | Walk / WalkSmall / Trot / MoveFast | move |
+| Turn | Turn | move |
+| Stop | StopAfterMove | move |
+| LookAround / Curious / Tail / Groom / Fidget / Stretch / Special / Happy | 同名剪辑 | idle |
+| Sit | Doze | idle |
+| Sleep / Eat / Interact / Sad / Angry | Sleep / Eat / Petted / Sad / Angry | 待制作 |
+
+`AnimationClips.Chain` 定义图集缺失时的回退：走动类 → `Walk` → `Idle`；`Sleep` → `Doze` → `Idle`；其余 → `Idle`。因此**新图集只要补进 `animations.json` 即可生效，代码无需改动**。
 
 ## 8. 存档
 

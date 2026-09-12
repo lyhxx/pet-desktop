@@ -17,6 +17,12 @@ public sealed class PetAnimation
 
     public event EventHandler<BitmapSource>? FrameChanged;
 
+    /// <summary>当前正在播放的剪辑名（未播放时为 null）。</summary>
+    public string? CurrentClipName => _clip?.Name;
+
+    /// <summary>非循环剪辑是否已播到最后一帧。</summary>
+    public bool IsFinished => _clip is { Loop: false } && _index >= _clip.Frames.Length - 1;
+
     public PetAnimation(AnimationLibrary library) => _library = library;
 
     public bool Play(string clipName)

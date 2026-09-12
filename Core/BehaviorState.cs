@@ -4,6 +4,8 @@ public enum BehaviorState
 {
     Idle,
     Walk,
+    Turn,
+    Stop,
     LookAround,
     Sit,
     Sleep,

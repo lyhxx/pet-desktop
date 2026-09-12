@@ -133,24 +133,8 @@ public sealed class PetController
 
     public void NotifyClicked() => _pauseSeconds = 0.8;
 
-    private static string ClipFor(BehaviorState s) => s switch
-    {
-        BehaviorState.Idle => "Idle",
-        BehaviorState.Walk => "Walk",
-        BehaviorState.LookAround => "LookAround",
-        BehaviorState.Sit => "Doze",
-        BehaviorState.Sleep => "Sleep",
-        BehaviorState.Eat => "Eat",
-        BehaviorState.Happy => "Happy",
-        BehaviorState.Sad => "Sad",
-        BehaviorState.Angry => "Angry",
-        BehaviorState.Curious => "Curious",
-        BehaviorState.Interact => "Petted",
-        BehaviorState.Stretch => "Stretch",
-        BehaviorState.Groom => "Groom",
-        BehaviorState.Tail => "Tail",
-        BehaviorState.Fidget => "Fidget",
-        BehaviorState.Special => "Special",
-        _ => "Idle"
-    };
+    private string ClipFor(BehaviorState s)
+        => s == BehaviorState.Walk
+            ? AnimationClips.ForGait(_behavior.Gait)
+            : AnimationClips.ForState(s);
 }
