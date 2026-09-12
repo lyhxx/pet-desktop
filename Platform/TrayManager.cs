@@ -1,3 +1,4 @@
+using DesktopPet.UI;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
 
@@ -5,11 +6,11 @@ namespace DesktopPet.Platform;
 
 /// <summary>
 /// 系统托盘。菜单只保留必要功能：显示/隐藏、设置、重新定位、退出。
+/// 通知走应用内轻提示（<see cref="ToastWindow"/>），不用系统气泡。
 /// </summary>
 public sealed class TrayManager : IDisposable
 {
     private Forms.NotifyIcon? _icon;
-    private string? _updateUrl;
 
     public void Initialize()
     {
@@ -30,39 +31,12 @@ public sealed class TrayManager : IDisposable
         };
 
         _icon.DoubleClick += (_, _) => AppServices.Pet.ToggleVisible();
-        _icon.BalloonTipClicked += (_, _) => OpenUrl(_updateUrl);
     }
 
     public void NotifyUpdate(string version, string url)
-    {
-        _updateUrl = url;
-        Notify("发现新版本", $"桌面宠物 v{version} 已发布，点此查看。", Forms.ToolTipIcon.Info);
-    }
+        => ToastWindow.Show("发现新版本", $"桌面宠物 v{version} 已发布，点击查看。", url);
 
-    public void NotifyInfo(string title, string text) => Notify(title, text, Forms.ToolTipIcon.Info);
-
-    private void Notify(string title, string text, Forms.ToolTipIcon icon)
-    {
-        if (_icon is null) return;
-        _icon.BalloonTipTitle = title;
-        _icon.BalloonTipText = text;
-        _icon.BalloonTipIcon = icon;
-        _icon.ShowBalloonTip(6000);
-    }
-
-    private static void OpenUrl(string? url)
-    {
-        if (string.IsNullOrEmpty(url)) return;
-        try
-        {
-            System.Diagnostics.Process.Start(
-                new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch
-        {
-            // 打开失败忽略。
-        }
-    }
+    public void NotifyInfo(string title, string text) => ToastWindow.Show(title, text);
 
     private static Drawing.Icon CreateIcon()
     {

@@ -71,11 +71,19 @@ public partial class App : Application
 
     public async Task CheckForUpdates(bool manual)
     {
-        UpdateInfo? info = await UpdateService.CheckAsync();
-        if (info is not null)
-            _tray.NotifyUpdate(info.Version, info.Url);
-        else if (manual)
-            _tray.NotifyInfo("检查更新", "当前已是最新版本。");
+        UpdateResult result = await UpdateService.CheckAsync();
+        switch (result.Status)
+        {
+            case UpdateStatus.UpdateAvailable when result.Info is { } info:
+                _tray.NotifyUpdate(info.Version, info.Url);
+                break;
+            case UpdateStatus.UpToDate when manual:
+                _tray.NotifyInfo("检查更新", "当前已是最新版本。");
+                break;
+            case UpdateStatus.Failed when manual:
+                _tray.NotifyInfo("检查更新失败", "无法连接更新服务器，请稍后重试。");
+                break;
+        }
     }
 
     public void SaveNow()

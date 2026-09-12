@@ -45,6 +45,7 @@ UI/          窗口与主题
   StatusWindow.*     头顶迷你状态（图标 + 百分比，鼠标穿透）
   SettingsWindow.*   设置
   OutfitWindow.*     装扮
+  ToastWindow.*      应用内通知（右下角轻提示，替代系统托盘气泡）
   EffectLayer.cs     独立粒子层
 Platform/    平台能力
   AppInfo.cs         版本号 + GitHub 仓库配置
@@ -278,12 +279,14 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 
 ## 9. 版本与更新
 
-- 版本号在 `DesktopPet.csproj` 的 `<Version>`（当前 `1.0.0`），运行时由 `Platform/AppInfo.cs` 读取。
+- 版本号在 `DesktopPet.csproj` 的 `<Version>`（当前 `1.1.1`），运行时由 `Platform/AppInfo.cs` 读取。
 - CI 发布时会用 git tag（去掉 `v`）覆盖版本号。
-- 检查更新由 `Platform/UpdateService.cs` 查询 GitHub Releases 的 `latest`，与当前版本比较。
+- 检查更新由 `Platform/UpdateService.cs` 完成：访问 GitHub 网页的 `releases/latest`，
+  读取 302 跳转地址里的 tag（**不用 REST API**，避免未登录 60 次/小时的限流导致 403 静默失败）。
   - 仓库地址在 `Platform/AppInfo.cs`（当前 `lyhxx/pet-desktop`），留空则跳过检查。
-  - 启动后延迟 6 秒自动检查；也可在设置窗口或托盘菜单手动检查。
-  - 发现新版本时托盘气泡提示，点击打开 Release 页。
+  - 启动后延迟 6 秒自动检查；也可在托盘菜单手动检查。
+  - 结果分三种：有新版 / 已是最新 / 检查失败（失败会在手动检查时明确提示，而不是假装最新）。
+  - 通知走应用内轻提示 `UI/ToastWindow`（右下角堆叠、几秒淡出），发现新版本时点击打开 Release 页。
 
 ## 10. 构建与发布
 
