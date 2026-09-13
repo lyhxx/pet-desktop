@@ -28,6 +28,7 @@ public sealed class PetController
 
         _behavior.StateChanged += (_, s) => _view.PlayAnimation(ClipFor(s));
         _behavior.FacingChanged += (_, f) => _view.SetFacing(f);
+        _behavior.SpecialChanged += (_, kind) => _view.PlayAnimation(AnimationClips.ForSpecial(kind));
     }
 
     public PetState State => _state;

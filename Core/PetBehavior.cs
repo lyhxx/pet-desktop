@@ -15,11 +15,15 @@ public sealed class PetBehavior
 
     private readonly Random _rng;
 
+    private readonly Queue<SpecialKind> _specialQueue = new();
+
     private double _minX, _maxX, _minY, _maxY;
     private double _targetX;
     private double _pendingTargetX;
+    private double _specialTargetX;
     private double _timeLeft;
     private double _speed = 40.0;
+    private double _specialSpeed;
     private double _walkCooldown;
     private double _restCooldown;
     private bool _overridden;
@@ -41,6 +45,9 @@ public sealed class PetBehavior
 
     public event EventHandler<BehaviorState>? StateChanged;
     public event EventHandler<int>? FacingChanged;
+
+    /// <summary>特殊动作在组合内切换时触发（状态仍是 Special，不会走 StateChanged）。</summary>
+    public event EventHandler<SpecialKind>? SpecialChanged;
 
     public PetBehavior(Random? rng = null) => _rng = rng ?? new Random();
 
@@ -91,7 +98,7 @@ public sealed class PetBehavior
 
         if (!Autonomous)
         {
-            if (State is BehaviorState.Walk or BehaviorState.Turn or BehaviorState.Stop)
+            if (State is BehaviorState.Walk or BehaviorState.Turn or BehaviorState.Stop or BehaviorState.Special)
                 SetState(BehaviorState.Idle, 1.0, 2.0);
             return;
         }
@@ -140,6 +147,19 @@ public sealed class PetBehavior
                 _timeLeft -= dt;
                 if (_timeLeft <= 0)
                     SetState(BehaviorState.Idle, 3.0, 7.0);
+                return;
+
+            // 特殊动作按组合连贯播放（滑行→停下、跌倒→爬起、连跳）。
+            case BehaviorState.Special:
+                StepSpecial(dt);
+                _timeLeft -= dt;
+                if (_timeLeft <= 0)
+                {
+                    if (_specialQueue.Count > 0)
+                        AdvanceSpecial();
+                    else
+                        RestAfterAction();
+                }
                 return;
         }
 
@@ -322,19 +342,88 @@ public sealed class PetBehavior
         _ => 40
     };
 
-    private static readonly SpecialKind[] AllSpecials =
-    {
-        SpecialKind.Flap, SpecialKind.Shake, SpecialKind.BellySlide, SpecialKind.SlideStop,
-        SpecialKind.Fall, SpecialKind.GetUp, SpecialKind.Stretch, SpecialKind.Hop,
-        SpecialKind.Happy, SpecialKind.Action
-    };
-
-    /// <summary>随机挑一个特殊动作，状态时长与该动作剪辑长度大致对齐。</summary>
+    /// <summary>挑一套特殊动作（部分动作连贯成组合），进入 Special 状态播放第一段。</summary>
     private void PickSpecial()
     {
-        Special = AllSpecials[_rng.Next(AllSpecials.Length)];
+        _specialQueue.Clear();
+
+        int roll = _rng.Next(100);
+        if (roll < 18)
+        {
+            // 肚皮滑行 → 滑行停止
+            _specialQueue.Enqueue(SpecialKind.BellySlide);
+            _specialQueue.Enqueue(SpecialKind.SlideStop);
+        }
+        else if (roll < 32)
+        {
+            // 跌倒 → 爬起
+            _specialQueue.Enqueue(SpecialKind.Fall);
+            _specialQueue.Enqueue(SpecialKind.GetUp);
+        }
+        else if (roll < 48)
+        {
+            // 连跳两下
+            _specialQueue.Enqueue(SpecialKind.Hop);
+            _specialQueue.Enqueue(SpecialKind.Hop);
+        }
+        else
+        {
+            SpecialKind[] singles =
+            {
+                SpecialKind.Flap, SpecialKind.Shake, SpecialKind.Stretch,
+                SpecialKind.Happy, SpecialKind.Action
+            };
+            _specialQueue.Enqueue(singles[_rng.Next(singles.Length)]);
+        }
+
+        Special = _specialQueue.Dequeue();
         double seconds = SpecialSeconds(Special);
+        SetupSpecialMove(Special);
         SetState(BehaviorState.Special, seconds, seconds);
+    }
+
+    /// <summary>组合里的下一段：状态仍是 Special，用 SpecialChanged 通知视图换剪辑。</summary>
+    private void AdvanceSpecial()
+    {
+        Special = _specialQueue.Dequeue();
+        double seconds = SpecialSeconds(Special);
+        SetupSpecialMove(Special);
+        _timeLeft = seconds;
+        SpecialChanged?.Invoke(this, Special);
+    }
+
+    /// <summary>滑行 / 蹦跳时同步向前位移，让动作和位置一致。</summary>
+    private void SetupSpecialMove(SpecialKind kind)
+    {
+        switch (kind)
+        {
+            case SpecialKind.BellySlide:
+                _specialSpeed = 180;
+                _specialTargetX = Clamp(X + Facing * 120, _minX, _maxX);
+                break;
+            case SpecialKind.Hop:
+                _specialSpeed = 70;
+                _specialTargetX = Clamp(X + Facing * 46, _minX, _maxX);
+                break;
+            default:
+                _specialSpeed = 0;
+                _specialTargetX = X;
+                break;
+        }
+    }
+
+    private void StepSpecial(double dt)
+    {
+        if (_specialSpeed <= 0) return;
+
+        double delta = _specialTargetX - X;
+        int dir = Math.Sign(delta);
+        if (dir == 0) return;
+
+        double next = X + dir * _specialSpeed * dt;
+        if ((dir > 0 && next >= _specialTargetX) || (dir < 0 && next <= _specialTargetX))
+            next = _specialTargetX;
+        X = Clamp(next, _minX, _maxX);
     }
 
     private static double SpecialSeconds(SpecialKind kind) => kind switch

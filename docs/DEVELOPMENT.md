@@ -246,7 +246,13 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 | 特殊开心 | 57-60 | `SpecialHappy` | `Special` | 8 | 否 |
 | 特殊动作 | 61-64 | `SpecialAction` | `Special` | 8 | 否 |
 
-> `PetBehavior` 选中 `Special` 时随机挑一个 `SpecialKind`（`Core/SpecialKind.cs`），再由 `AnimationClips.ForSpecial` 映射到剪辑；状态时长与剪辑长度对齐。
+> `PetBehavior` 选中 `Special` 时会挑一套**连贯组合**播放：
+> - **肚皮滑行 → 滑行停止**（滑行时向前位移）
+> - **跌倒 → 爬起**
+> - **连跳两下**（每次小幅前移）
+> - 或单个：扑翅 / 抖羽毛 / 伸展 / 特殊开心 / 特殊动作
+>
+> 组合内切换用 `SpecialChanged` 事件通知视图换剪辑（状态仍是 `Special`）；`AnimationClips.ForSpecial` 负责映射，状态时长与剪辑长度对齐。
 
 后续图集（`Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
 
@@ -326,6 +332,7 @@ dotnet run --project tools/SpriteSlicer -- scale Assets/Pet/Pet_EatSleep.png 0.9
 - 方向与当前朝向相反时，先进入 `Turn`（转身）再走；到达目标后进入 `Stop`（停下）再回待机
 - 每个主动动作（走动 / 张望 / 理羽等）结束后先回待机并进入 **2~5 秒休息冷却**，冷却期间几乎只待机/坐着，避免动作一个接一个连播
 - 睡觉是一串过渡：`Sleepy`（困倦）→ `Sleep`（睡觉）→ `WakeUp`（睡醒）→ `AwakeIdle`（清醒待机）→ `Idle`
+- 特殊动作按连贯组合播放（滑行→停下、跌倒→爬起、连跳），滑行 / 蹦跳会同步向前位移
 - 待机小动作（张望 / 理羽等）播完后由视图自动回到循环的 `Idle`（`PetWindow.UpdateOneShot`），不会停在最后一帧像"卡住"；互动 / 吃睡剪辑由控制器接管，不自动回退
 - 互动时用 `OverrideState` 强制进入吃东西 / 被摸等状态，结束后回到自主行为
 - 悬停菜单打开时 `Autonomous = false`，暂停自主走动但互动照常进行
