@@ -63,6 +63,7 @@ Assets/      图标与图集
   Pet/Pet_Idle.png      企鹅待机图集（Idle / 眨眼 / 张望 / 理羽等）
   Pet/Pet_Move.png      企鹅移动图集（行走 / 小跑 / 转身 / 停下等）
   Pet/Pet_Action.png    企鹅互动图集（被点击 / 抚摸 / 开心 / 生气 / 害羞等）
+  Pet/Pet_EatSleep.png  企鹅吃睡图集（吃东西 / 喝水 / 困倦 / 睡觉 / 睡醒等）
   Pet/animations.json   动画表
 installer/   Inno Setup 脚本
 tools/       SpriteSlicer 切图工具
@@ -207,7 +208,25 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 
 > 互动由 `PetController` 的**状态队列**驱动，例如抚摸 = `Interact` → `Happy`/`Shy` → `InteractEnd` → 回到自主行为。
 
-后续图集（`Pet_EatSleep` / `Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
+### 4.10 Pet_EatSleep 动作映射
+
+图集：`Pet_EatSleep.png`；`animations.json` 中 `sheet` 为 `eatSleep`。
+
+![Pet_EatSleep 帧号预览](images/pet-eatSleep-frames.jpg)
+
+| 格内动作 | 帧号 | 剪辑名 | 行为状态 / 触发 | fps | 循环 |
+|---|---|---|---|---|---|
+| 吃东西 | 01-16 | `Eat` | `Eat`（喂食小鱼干 / 鲜虾） | 10 | 是 |
+| 喝水 | 17-28 | `Drink` | `Drink`（喂牛奶） | 10 | 是 |
+| 吃饱开心 | 29-32 | `EatHappy` | `EatHappy`（吃完 / 已饱） | 8 | 否 |
+| 困倦 | 33-40 | `Sleepy` | `Sleepy`（准备睡觉） | 6 | 否 |
+| 睡觉 | 41-54 | `Sleep` | `Sleep`（精力低时自主） | 6 | 是 |
+| 睡醒 | 55-62 | `WakeUp` | `WakeUp`（睡醒过渡） | 8 | 否 |
+| 清醒待机 | 63-64 | `AwakeIdle` | `AwakeIdle`（刚醒的待机） | 6 | 是 |
+
+> 睡觉是行为系统里的一串过渡：`Sleepy` → `Sleep` → `WakeUp` → `AwakeIdle` → `Idle`；`Sleeping` 仅在 `Sleep` 期间为真（影响精力恢复）。
+
+后续图集（`Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
 
 ## 5. 切图工具 SpriteSlicer
 
@@ -271,7 +290,8 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 - 走动带**步态**（`Gait`）：普通 / 小步快走 / 小跑 / 快速移动，按距离与随机选择，速度随之变化
 - 方向与当前朝向相反时，先进入 `Turn`（转身）再走；到达目标后进入 `Stop`（停下）再回待机
 - 每个主动动作（走动 / 张望 / 理羽等）结束后先回待机并进入 **2~5 秒休息冷却**，冷却期间几乎只待机/坐着，避免动作一个接一个连播
-- 一次性动作剪辑播完后由视图自动回到循环的 `Idle`（`PetWindow.UpdateOneShot`），不会停在最后一帧像"卡住"
+- 睡觉是一串过渡：`Sleepy`（困倦）→ `Sleep`（睡觉）→ `WakeUp`（睡醒）→ `AwakeIdle`（清醒待机）→ `Idle`
+- 待机小动作（张望 / 理羽等）播完后由视图自动回到循环的 `Idle`（`PetWindow.UpdateOneShot`），不会停在最后一帧像"卡住"；互动 / 吃睡剪辑由控制器接管，不自动回退
 - 互动时用 `OverrideState` 强制进入吃东西 / 被摸等状态，结束后回到自主行为
 - 悬停菜单打开时 `Autonomous = false`，暂停自主走动但互动照常进行
 - 待机时视图层会不定时播放 `Blink`（眨眼），见 `PetWindow.UpdateBlink`
@@ -290,7 +310,7 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 | Sit | Doze | idle |
 | Happy / Curious / Angry | 同名剪辑 | action |
 | Interact / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | Petted / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | action |
-| Sleep / Eat | Sleep / Eat | 待制作 |
+| Eat / Drink / EatHappy / Sleepy / Sleep / WakeUp / AwakeIdle | 同名剪辑 | eatSleep |
 
 `AnimationClips.Chain` 定义图集缺失时的回退：走动类 → `Walk` → `Idle`；`Sleep` → `Doze` → `Idle`；其余 → `Idle`。因此**新图集只要补进 `animations.json` 即可生效，代码无需改动**。
 

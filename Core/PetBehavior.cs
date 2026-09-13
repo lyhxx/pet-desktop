@@ -113,6 +113,31 @@ public sealed class PetBehavior
                 if (_timeLeft <= 0)
                     RestAfterAction();
                 return;
+
+            // 睡觉是一串过渡：困倦 → 睡觉 → 睡醒 → 清醒待机 → 待机。
+            case BehaviorState.Sleepy:
+                _timeLeft -= dt;
+                if (_timeLeft <= 0)
+                    SetState(BehaviorState.Sleep, 10, 20);
+                return;
+
+            case BehaviorState.Sleep:
+                _timeLeft -= dt;
+                if (_timeLeft <= 0)
+                    SetState(BehaviorState.WakeUp, 1.0, 1.5);
+                return;
+
+            case BehaviorState.WakeUp:
+                _timeLeft -= dt;
+                if (_timeLeft <= 0)
+                    SetState(BehaviorState.AwakeIdle, 1.5, 2.5);
+                return;
+
+            case BehaviorState.AwakeIdle:
+                _timeLeft -= dt;
+                if (_timeLeft <= 0)
+                    SetState(BehaviorState.Idle, 3.0, 7.0);
+                return;
         }
 
         _timeLeft -= dt;
@@ -191,7 +216,7 @@ public sealed class PetBehavior
                 break;
 
             case BehaviorState.Sleep:
-                SetState(BehaviorState.Sleep, 10, 20);
+                SetState(BehaviorState.Sleepy, 1.2, 1.6);
                 break;
 
             case BehaviorState.Sit:

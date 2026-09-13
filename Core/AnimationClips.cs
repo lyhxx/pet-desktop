@@ -41,9 +41,14 @@ public static class AnimationClips
     public const string Startled = "Startled";
     public const string InteractEnd = "InteractEnd";
 
-    // 待制作图集（EatSleep）
-    public const string Sleep = "Sleep";
+    // EatSleep 图集（吃 / 喝 / 睡觉）
     public const string Eat = "Eat";
+    public const string Drink = "Drink";
+    public const string EatHappy = "EatHappy";
+    public const string Sleepy = "Sleepy";
+    public const string Sleep = "Sleep";
+    public const string WakeUp = "WakeUp";
+    public const string AwakeIdle = "AwakeIdle";
 
     public static string ForState(BehaviorState state) => state switch
     {
@@ -54,7 +59,12 @@ public static class AnimationClips
         BehaviorState.LookAround => LookAround,
         BehaviorState.Sit => Doze,
         BehaviorState.Sleep => Sleep,
+        BehaviorState.Sleepy => Sleepy,
+        BehaviorState.WakeUp => WakeUp,
+        BehaviorState.AwakeIdle => AwakeIdle,
         BehaviorState.Eat => Eat,
+        BehaviorState.Drink => Drink,
+        BehaviorState.EatHappy => EatHappy,
         BehaviorState.Happy => Happy,
         BehaviorState.Angry => Angry,
         BehaviorState.Curious => Curious,
@@ -100,6 +110,16 @@ public static class AnimationClips
                 break;
             case Sleep:
                 chain.Add(Doze);
+                break;
+            case Sleepy:
+                chain.Add(Sleep);
+                chain.Add(Doze);
+                break;
+            case Drink:
+                chain.Add(Eat);
+                break;
+            case EatHappy:
+                chain.Add(Happy);
                 break;
         }
 

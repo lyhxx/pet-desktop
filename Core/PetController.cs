@@ -52,21 +52,23 @@ public sealed class PetController
         _view.MoveTo(_behavior.X, _behavior.Y);
     }
 
-    /// <summary>喂食：吃东西 → 开心 → 互动结束。</summary>
+    /// <summary>喂食：吃东西 / 喝水 → 吃饱开心 → 互动结束。</summary>
     public void Feed(Food food)
     {
         // 已经很饱就不吃了，只开心一下。
         if (_state.Hunger <= 2)
         {
             EffectRequested?.Invoke(this, EffectKind.Heart);
-            BeginInteraction(BehaviorState.Happy, 1.0, (BehaviorState.InteractEnd, 0.4));
+            BeginInteraction(BehaviorState.EatHappy, 0.9, (BehaviorState.InteractEnd, 0.4));
             return;
         }
 
         _state.ApplyFeed(food);
         EffectRequested?.Invoke(this, EffectKind.Heart);
-        BeginInteraction(BehaviorState.Eat, 1.8,
-            (BehaviorState.Happy, 0.9),
+
+        BehaviorState consume = food.Drink ? BehaviorState.Drink : BehaviorState.Eat;
+        BeginInteraction(consume, 1.8,
+            (BehaviorState.EatHappy, 0.9),
             (BehaviorState.InteractEnd, 0.4));
     }
 
