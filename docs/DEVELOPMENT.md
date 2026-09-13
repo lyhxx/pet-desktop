@@ -64,6 +64,7 @@ Assets/      图标与图集
   Pet/Pet_Move.png      企鹅移动图集（行走 / 小跑 / 转身 / 停下等）
   Pet/Pet_Action.png    企鹅互动图集（被点击 / 抚摸 / 开心 / 生气 / 害羞等）
   Pet/Pet_EatSleep.png  企鹅吃睡图集（吃东西 / 喝水 / 困倦 / 睡觉 / 睡醒等）
+  Pet/Pet_Special.png   企鹅特殊图集（扑翅 / 抖羽毛 / 肚皮滑行 / 跌倒 / 蹦跳等）
   Pet/animations.json   动画表
 installer/   Inno Setup 脚本
 tools/       SpriteSlicer 切图工具
@@ -226,11 +227,32 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 
 > 睡觉是行为系统里的一串过渡：`Sleepy` → `Sleep` → `WakeUp` → `AwakeIdle` → `Idle`；`Sleeping` 仅在 `Sleep` 期间为真（影响精力恢复）。
 
+### 4.11 Pet_Special 动作映射
+
+图集：`Pet_Special.png`；`animations.json` 中 `sheet` 为 `special`。
+
+![Pet_Special 帧号预览](images/pet-special-frames.jpg)
+
+| 格内动作 | 帧号 | 剪辑名 | 行为状态 / 触发 | fps | 循环 |
+|---|---|---|---|---|---|
+| 扑翅 | 01-12 | `Flap` | `Special`（随机） | 10 | 否 |
+| 抖羽毛 | 13-20 | `Shake` | `Special` | 10 | 否 |
+| 肚皮滑行 | 21-28 | `BellySlide` | `Special` | 12 | 否 |
+| 滑行停止 | 29-32 | `SlideStop` | `Special` | 10 | 否 |
+| 跌倒 | 33-36 | `Fall` | `Special` | 10 | 否 |
+| 爬起 | 37-40 | `GetUp` | `Special` | 10 | 否 |
+| 伸展 | 41-48 | `StretchLong` | `Special` | 6 | 否 |
+| 蹦跳 | 49-56 | `Hop` | `Special` | 12 | 否 |
+| 特殊开心 | 57-60 | `SpecialHappy` | `Special` | 8 | 否 |
+| 特殊动作 | 61-64 | `SpecialAction` | `Special` | 8 | 否 |
+
+> `PetBehavior` 选中 `Special` 时随机挑一个 `SpecialKind`（`Core/SpecialKind.cs`），再由 `AnimationClips.ForSpecial` 映射到剪辑；状态时长与剪辑长度对齐。
+
 后续图集（`Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
 
 ## 5. 切图工具 SpriteSlicer
 
-位于 `tools/SpriteSlicer/`，四种模式：
+位于 `tools/SpriteSlicer/`，五种模式：
 
 ```bash
 # 1) 切图：输入 → 处理后图集 + 64 帧 + 预览
@@ -244,12 +266,19 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 
 # 4) 清理顶部杂块：就地修复已有图集
 dotnet run --project tools/SpriteSlicer -- cleanup Assets/Pet/Pet_Action.png
+
+# 5) 按图集统一缩放：以脚部锚点为中心，对齐不同图集之间的角色大小
+dotnet run --project tools/SpriteSlicer -- scale Assets/Pet/Pet_EatSleep.png 0.9313
 ```
 
 切图流程（`NormalizeAnchors` 等）依次执行：**缩放到 2048×2048 → 清理低 alpha 噪点 → 清除格边界线 → 清理顶部杂块 → 锚点归一化 → 保存图集 → 导出 64 帧 + 预览**。
 
 - **清理顶部杂块 `RemoveTopStray`**：AI 原图常把上一行角色的脚 / 边角压进下一行格子里，播放时会在头顶露出半截"脚"。该步骤按连通块处理，只删除「不是主体、且触及顶部 16px」的碎块，保留爱心 / 问号 / `Zzz` 等悬浮元素。
 - 已有图集可用 `dotnet run --project tools/SpriteSlicer -- cleanup Assets/Pet/<名称>.png` 就地修复。
+- **按图集统一缩放 `scale`**：AI 生成的不同图集常**整体大小不一**，切换图集（待机 ↔ 喂食 ↔ 互动）时角色会"放大 / 缩小"。用 `scale <atlas> <factor>` 以脚部锚点为中心整体缩放对齐：
+  - 量法：每格取「主体包围盒上 35% 区域的最大横向跨度」近似**头部宽度**，再取 64 帧中位数（对姿势不敏感）。
+  - 以 `Pet_Idle`（中位数 ≈149px）为基准，当前系数：`Pet_Move ×0.974`、`Pet_Action ×0.993`、`Pet_EatSleep ×0.931`、`Pet_Special ×0.974`。
+  - 新图集切完后先量一次、再按需 `scale`，避免和已有图集对不上。
 
 ### 5.1 图片尺寸不一样怎么办（重点）
 
@@ -312,11 +341,12 @@ dotnet run --project tools/SpriteSlicer -- cleanup Assets/Pet/Pet_Action.png
 | Walk / Gait.Small / Gait.Trot / Gait.Fast | Walk / WalkSmall / Trot / MoveFast | move |
 | Turn | Turn | move |
 | Stop | StopAfterMove | move |
-| LookAround / Stretch / Groom / Tail / Fidget / Special | 同名剪辑 | idle |
+| LookAround / Stretch / Groom / Tail / Fidget | 同名剪辑 | idle |
 | Sit | Doze | idle |
 | Happy / Curious / Angry | 同名剪辑 | action |
 | Interact / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | Petted / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | action |
 | Eat / Drink / EatHappy / Sleepy / Sleep / WakeUp / AwakeIdle | 同名剪辑 | eatSleep |
+| Special | 随机 `SpecialKind` → Flap / Shake / … | special |
 
 `AnimationClips.Chain` 定义图集缺失时的回退：走动类 → `Walk` → `Idle`；`Sleep` → `Doze` → `Idle`；其余 → `Idle`。因此**新图集只要补进 `animations.json` 即可生效，代码无需改动**。
 

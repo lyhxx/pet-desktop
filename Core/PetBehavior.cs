@@ -36,6 +36,9 @@ public sealed class PetBehavior
     /// <summary>当前走动的步态，供视图选择对应动画剪辑。</summary>
     public Gait Gait { get; private set; } = Gait.Walk;
 
+    /// <summary>当前特殊动作，供视图选择对应动画剪辑。</summary>
+    public SpecialKind Special { get; private set; } = SpecialKind.Flap;
+
     public event EventHandler<BehaviorState>? StateChanged;
     public event EventHandler<int>? FacingChanged;
 
@@ -248,7 +251,7 @@ public sealed class PetBehavior
                 break;
 
             case BehaviorState.Special:
-                SetState(BehaviorState.Special, 1.4, 2.4);
+                PickSpecial();
                 break;
 
             default:
@@ -317,6 +320,35 @@ public sealed class PetBehavior
         Gait.Trot => 62,
         Gait.Fast => 82,
         _ => 40
+    };
+
+    private static readonly SpecialKind[] AllSpecials =
+    {
+        SpecialKind.Flap, SpecialKind.Shake, SpecialKind.BellySlide, SpecialKind.SlideStop,
+        SpecialKind.Fall, SpecialKind.GetUp, SpecialKind.Stretch, SpecialKind.Hop,
+        SpecialKind.Happy, SpecialKind.Action
+    };
+
+    /// <summary>随机挑一个特殊动作，状态时长与该动作剪辑长度大致对齐。</summary>
+    private void PickSpecial()
+    {
+        Special = AllSpecials[_rng.Next(AllSpecials.Length)];
+        double seconds = SpecialSeconds(Special);
+        SetState(BehaviorState.Special, seconds, seconds);
+    }
+
+    private static double SpecialSeconds(SpecialKind kind) => kind switch
+    {
+        SpecialKind.Flap => 1.3,
+        SpecialKind.Shake => 0.9,
+        SpecialKind.BellySlide => 0.8,
+        SpecialKind.SlideStop => 0.5,
+        SpecialKind.Fall => 0.5,
+        SpecialKind.GetUp => 0.5,
+        SpecialKind.Stretch => 1.4,
+        SpecialKind.Hop => 0.8,
+        SpecialKind.Happy => 0.6,
+        _ => 0.6
     };
 
     private BehaviorState PickWeighted(params (BehaviorState State, double Weight)[] choices)

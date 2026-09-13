@@ -50,6 +50,18 @@ public static class AnimationClips
     public const string WakeUp = "WakeUp";
     public const string AwakeIdle = "AwakeIdle";
 
+    // Special 图集（特殊动作）
+    public const string Flap = "Flap";
+    public const string Shake = "Shake";
+    public const string BellySlide = "BellySlide";
+    public const string SlideStop = "SlideStop";
+    public const string Fall = "Fall";
+    public const string GetUp = "GetUp";
+    public const string StretchLong = "StretchLong";
+    public const string Hop = "Hop";
+    public const string SpecialHappy = "SpecialHappy";
+    public const string SpecialAction = "SpecialAction";
+
     public static string ForState(BehaviorState state) => state switch
     {
         BehaviorState.Idle => Idle,
@@ -73,7 +85,7 @@ public static class AnimationClips
         BehaviorState.Groom => Groom,
         BehaviorState.Tail => Tail,
         BehaviorState.Fidget => Fidget,
-        BehaviorState.Special => Special,
+        BehaviorState.Special => SpecialAction,
         BehaviorState.Clicked => Clicked,
         BehaviorState.Shy => Shy,
         BehaviorState.Surprised => Surprised,
@@ -89,6 +101,20 @@ public static class AnimationClips
         Gait.Trot => Trot,
         Gait.Fast => MoveFast,
         _ => Walk
+    };
+
+    public static string ForSpecial(SpecialKind kind) => kind switch
+    {
+        SpecialKind.Flap => Flap,
+        SpecialKind.Shake => Shake,
+        SpecialKind.BellySlide => BellySlide,
+        SpecialKind.SlideStop => SlideStop,
+        SpecialKind.Fall => Fall,
+        SpecialKind.GetUp => GetUp,
+        SpecialKind.Stretch => StretchLong,
+        SpecialKind.Hop => Hop,
+        SpecialKind.Happy => SpecialHappy,
+        _ => SpecialAction
     };
 
     /// <summary>首选剪辑所在图集缺失时的回退顺序，最后一定落到 Idle。</summary>

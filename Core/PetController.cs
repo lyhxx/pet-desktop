@@ -174,7 +174,11 @@ public sealed class PetController
     }
 
     private string ClipFor(BehaviorState s)
-        => s == BehaviorState.Walk
-            ? AnimationClips.ForGait(_behavior.Gait)
-            : AnimationClips.ForState(s);
+    {
+        if (s == BehaviorState.Walk)
+            return AnimationClips.ForGait(_behavior.Gait);
+        if (s == BehaviorState.Special)
+            return AnimationClips.ForSpecial(_behavior.Special);
+        return AnimationClips.ForState(s);
+    }
 }

@@ -19,6 +19,12 @@ if (args.Length >= 2 && args[0] == "cleanup")
     return 0;
 }
 
+if (args.Length >= 3 && args[0] == "scale")
+{
+    ScaleAtlas(args[1], double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture));
+    return 0;
+}
+
 if (args.Length >= 3 && args[0] == "makeico")
 {
     MakeIco(args[1], args[2]);
@@ -329,6 +335,54 @@ static void CleanBoundaries(Bitmap bmp, int margin)
 
     Marshal.Copy(buffer, 0, data.Scan0, bytes);
     bmp.UnlockBits(data);
+}
+
+/// <summary>
+/// 按图集统一缩放（以脚部锚点 128,236 为中心），用于对齐不同图集之间的角色大小。
+/// AI 生成的不同图集常整体大小不一，切换图集时会“放大/缩小”。
+/// </summary>
+static void ScaleAtlas(string path, double factor)
+{
+    string tmp = path + ".tmp.png";
+    using (var src = new Bitmap(path))
+    using (var outBmp = new Bitmap(src.Width, src.Height, PixelFormat.Format32bppArgb))
+    {
+        for (int r = 0; r < Grid; r++)
+        {
+            for (int c = 0; c < Grid; c++)
+            {
+                int ox = c * Cell, oy = r * Cell;
+
+                using var cell = new Bitmap(Cell, Cell, PixelFormat.Format32bppArgb);
+                using (var cg = Graphics.FromImage(cell))
+                {
+                    cg.CompositingMode = CompositingMode.SourceCopy;
+                    cg.DrawImage(src,
+                        new Rectangle(0, 0, Cell, Cell),
+                        new Rectangle(ox, oy, Cell, Cell),
+                        GraphicsUnit.Pixel);
+                }
+
+                using var g = Graphics.FromImage(outBmp);
+                g.CompositingMode = CompositingMode.SourceOver;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+
+                // 以锚点为中心缩放该格
+                g.TranslateTransform(ox + 128, oy + 236);
+                g.ScaleTransform((float)factor, (float)factor);
+                g.TranslateTransform(-(ox + 128), -(oy + 236));
+                g.DrawImage(cell, ox, oy);
+            }
+        }
+
+        outBmp.Save(tmp, ImageFormat.Png);
+    }
+
+    File.Delete(path);
+    File.Move(tmp, path);
+    Console.WriteLine($"scaled x{factor:F4}: {path}");
 }
 
 static void Cleanup(string path)

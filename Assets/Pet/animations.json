@@ -12,6 +12,7 @@
     "move": "Pet_Move.png",
     "action": "Pet_Action.png",
     "eatSleep": "Pet_EatSleep.png",
+    "special": "Pet_Special.png",
     "outfit": "Pet_Outfit.png",
     "effect": "Pet_Effect.png"
   },
@@ -24,7 +25,6 @@
     "Tail":       { "sheet": "idle",     "frames": [39, 40, 41, 42, 43, 44],                  "fps": 6,  "loop": false },
     "Doze":       { "sheet": "idle",     "frames": [49, 50, 51, 52, 53, 54],                  "fps": 4,  "loop": true },
     "Fidget":     { "sheet": "idle",     "frames": [55, 56, 57, 58, 59, 60],                  "fps": 5,  "loop": false },
-    "Special":    { "sheet": "idle",     "frames": [61, 62, 63, 64],                          "fps": 5,  "loop": false },
 
     "Walk":          { "sheet": "move",  "frames": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], "fps": 12, "loop": true },
     "WalkSmall":     { "sheet": "move",  "frames": [17, 18, 19, 20, 21, 22, 23, 24],           "fps": 12, "loop": true },
@@ -53,6 +53,17 @@
     "Sleepy":     { "sheet": "eatSleep", "frames": [33, 34, 35, 36, 37, 38, 39, 40],           "fps": 6,  "loop": false },
     "Sleep":      { "sheet": "eatSleep", "frames": [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54], "fps": 6, "loop": true },
     "WakeUp":     { "sheet": "eatSleep", "frames": [55, 56, 57, 58, 59, 60, 61, 62],           "fps": 8,  "loop": false },
-    "AwakeIdle":  { "sheet": "eatSleep", "frames": [63, 64],                                   "fps": 6,  "loop": true }
+    "AwakeIdle":  { "sheet": "eatSleep", "frames": [63, 64],                                   "fps": 6,  "loop": true },
+
+    "Flap":          { "sheet": "special", "frames": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],  "fps": 10, "loop": false },
+    "Shake":         { "sheet": "special", "frames": [13, 14, 15, 16, 17, 18, 19, 20],         "fps": 10, "loop": false },
+    "BellySlide":    { "sheet": "special", "frames": [21, 22, 23, 24, 25, 26, 27, 28],         "fps": 12, "loop": false },
+    "SlideStop":     { "sheet": "special", "frames": [29, 30, 31, 32],                         "fps": 10, "loop": false },
+    "Fall":          { "sheet": "special", "frames": [33, 34, 35, 36],                         "fps": 10, "loop": false },
+    "GetUp":         { "sheet": "special", "frames": [37, 38, 39, 40],                         "fps": 10, "loop": false },
+    "StretchLong":   { "sheet": "special", "frames": [41, 42, 43, 44, 45, 46, 47, 48],         "fps": 6,  "loop": false },
+    "Hop":           { "sheet": "special", "frames": [49, 50, 51, 52, 53, 54, 55, 56],         "fps": 12, "loop": false },
+    "SpecialHappy":  { "sheet": "special", "frames": [57, 58, 59, 60],                         "fps": 8,  "loop": false },
+    "SpecialAction": { "sheet": "special", "frames": [61, 62, 63, 64],                         "fps": 8,  "loop": false }
   }
 }
