@@ -11,7 +11,6 @@ public enum BehaviorState
     Sleep,
     Eat,
     Happy,
-    Sad,
     Angry,
     Curious,
     Interact,
@@ -19,5 +18,11 @@ public enum BehaviorState
     Groom,
     Tail,
     Fidget,
-    Special
+    Special,
+    Clicked,
+    Shy,
+    Surprised,
+    Wave,
+    Startled,
+    InteractEnd
 }

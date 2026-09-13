@@ -62,6 +62,7 @@ Assets/      图标与图集
   app.ico / app-icon.png
   Pet/Pet_Idle.png      企鹅待机图集（Idle / 眨眼 / 张望 / 理羽等）
   Pet/Pet_Move.png      企鹅移动图集（行走 / 小跑 / 转身 / 停下等）
+  Pet/Pet_Action.png    企鹅互动图集（被点击 / 抚摸 / 开心 / 生气 / 害羞等）
   Pet/animations.json   动画表
 installer/   Inno Setup 脚本
 tools/       SpriteSlicer 切图工具
@@ -185,7 +186,28 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 
 > 剪辑名 ↔ 行为/步态的映射集中在 `Core/AnimationClips.cs`，改动那里即可，不必改行为逻辑。
 
-后续图集（`Pet_Action` / `Pet_EatSleep` / `Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
+### 4.9 Pet_Action 动作映射
+
+图集：`Pet_Action.png`；`animations.json` 中 `sheet` 为 `action`。
+
+![Pet_Action 帧号预览](images/pet-action-frames.jpg)
+
+| 格内动作 | 帧号 | 剪辑名 | 行为状态 / 触发 | fps | 循环 |
+|---|---|---|---|---|---|
+| 被点击 | 01-08 | `Clicked` | `Clicked`（点击宠物） | 10 | 否 |
+| 被抚摸 | 09-16 | `Petted` | `Interact`（抚摸） | 10 | 否 |
+| 开心 | 17-24 | `Happy` | `Happy`（喂食 / 抚摸后） | 10 | 否 |
+| 好奇 | 25-32 | `Curious` | `Curious`（自主 / 互动） | 10 | 否 |
+| 生气 | 33-40 | `Angry` | `Angry`（饥饿 > 75 时抚摸） | 10 | 否 |
+| 害羞 | 41-48 | `Shy` | `Shy`（抚摸后随机） | 10 | 否 |
+| 惊讶 | 49-54 | `Surprised` | `Surprised`（睡着/坐着时被点击） | 10 | 否 |
+| 打招呼 | 55-58 | `Wave` | `Wave`（启动时） | 8 | 否 |
+| 受到惊吓 | 59-62 | `Startled` | `Startled`（拖动拎起） | 12 | 否 |
+| 互动结束 | 63-64 | `InteractEnd` | `InteractEnd`（互动收尾） | 6 | 否 |
+
+> 互动由 `PetController` 的**状态队列**驱动，例如抚摸 = `Interact` → `Happy`/`Shy` → `InteractEnd` → 回到自主行为。
+
+后续图集（`Pet_EatSleep` / `Pet_Outfit` / `Pet_Effect`）同规格，只需在 `animations.json` 增加对应 `sheet` 与动画即可；缺失的图集程序会沿 `AnimationClips.Chain` **逐级回退到 Idle**，不会切回占位形象。
 
 ## 5. 切图工具 SpriteSlicer
 
@@ -224,7 +246,7 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 1. 按 4.1~4.3 的规格生成 2048×2048、8×8、朝右、透明背景的 Sprite Sheet。
 2. 用 SpriteSlicer 切图，输出到 `Assets/Pet/<名称>.png`；用 `measure` 确认每帧脚底 Y 一致。
 3. 在 `Assets/Pet/animations.json` 的 `sheets` 增加键，在 `animations` 增加对应动画（帧号按图内容）。
-4. 若该动作对应某个行为状态，在 `Core/PetController.cs` 的 `ClipFor` 里映射。
+4. 若该动作对应某个行为状态，在 `Core/AnimationClips.cs` 的 `ForState` 里映射。
 5. 运行验证。
 
 ## 6. 状态系统
@@ -264,9 +286,11 @@ dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/ap
 | Walk / Gait.Small / Gait.Trot / Gait.Fast | Walk / WalkSmall / Trot / MoveFast | move |
 | Turn | Turn | move |
 | Stop | StopAfterMove | move |
-| LookAround / Curious / Tail / Groom / Fidget / Stretch / Special / Happy | 同名剪辑 | idle |
+| LookAround / Stretch / Groom / Tail / Fidget / Special | 同名剪辑 | idle |
 | Sit | Doze | idle |
-| Sleep / Eat / Interact / Sad / Angry | Sleep / Eat / Petted / Sad / Angry | 待制作 |
+| Happy / Curious / Angry | 同名剪辑 | action |
+| Interact / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | Petted / Clicked / Shy / Surprised / Wave / Startled / InteractEnd | action |
+| Sleep / Eat | Sleep / Eat | 待制作 |
 
 `AnimationClips.Chain` 定义图集缺失时的回退：走动类 → `Walk` → `Idle`；`Sleep` → `Doze` → `Idle`；其余 → `Idle`。因此**新图集只要补进 `animations.json` 即可生效，代码无需改动**。
 

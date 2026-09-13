@@ -9,11 +9,13 @@ public sealed class PetController
     private readonly IPetView _view;
     private readonly PetBehavior _behavior;
     private readonly PetState _state;
+    private readonly Random _rng = new();
+
+    // 互动是一串连续的强制状态（如 被摸 → 开心 → 互动结束）。
+    private readonly Queue<(BehaviorState State, double Seconds)> _pending = new();
 
     private double _pauseSeconds;
     private double _interactionRemaining;
-    private BehaviorState? _followUp;
-    private double _followUpRemaining;
 
     /// <summary>请求独立粒子层播放效果，与宠物状态机解耦。</summary>
     public event EventHandler<EffectKind>? EffectRequested;
@@ -38,8 +40,8 @@ public sealed class PetController
         set => _behavior.Autonomous = value;
     }
 
-    /// <summary>进入场景，播放初始动画。</summary>
-    public void Start() => _view.PlayAnimation(ClipFor(_behavior.State));
+    /// <summary>进入场景：先打个招呼再回到自主行为。</summary>
+    public void Start() => BeginInteraction(BehaviorState.Wave, 1.0);
 
     public void SetBounds(double minX, double maxX, double minY, double maxY)
         => _behavior.SetBounds(minX, maxX, minY, maxY);
@@ -50,36 +52,37 @@ public sealed class PetController
         _view.MoveTo(_behavior.X, _behavior.Y);
     }
 
-    /// <summary>喂食：改变状态 + 播放吃东西，随后开心，并触发爱心效果。</summary>
+    /// <summary>喂食：吃东西 → 开心 → 互动结束。</summary>
     public void Feed(Food food)
     {
-        // 已经很饱就不吃了，只开心一下，避免无意义地反复喂。
+        // 已经很饱就不吃了，只开心一下。
         if (_state.Hunger <= 2)
         {
-            _behavior.OverrideState(BehaviorState.Happy);
             EffectRequested?.Invoke(this, EffectKind.Heart);
-            _interactionRemaining = 1.0;
-            _followUp = null;
+            BeginInteraction(BehaviorState.Happy, 1.0, (BehaviorState.InteractEnd, 0.4));
             return;
         }
 
         _state.ApplyFeed(food);
-        _behavior.OverrideState(BehaviorState.Eat);
         EffectRequested?.Invoke(this, EffectKind.Heart);
-        _interactionRemaining = 2.4;
-        _followUp = BehaviorState.Happy;
-        _followUpRemaining = 1.4;
+        BeginInteraction(BehaviorState.Eat, 1.8,
+            (BehaviorState.Happy, 0.9),
+            (BehaviorState.InteractEnd, 0.4));
     }
 
-    /// <summary>抚摸：提升心情，播放被摸，随后开心。</summary>
+    /// <summary>抚摸：被摸 → 开心 / 害羞（饿了会生气）→ 互动结束。</summary>
     public void Pet()
     {
         _state.ApplyPetting();
-        _behavior.OverrideState(BehaviorState.Interact);
         EffectRequested?.Invoke(this, EffectKind.Heart);
-        _interactionRemaining = 1.8;
-        _followUp = BehaviorState.Happy;
-        _followUpRemaining = 1.2;
+
+        BehaviorState mood = _state.Hunger > 75
+            ? BehaviorState.Angry
+            : _rng.NextDouble() < 0.35 ? BehaviorState.Shy : BehaviorState.Happy;
+
+        BeginInteraction(BehaviorState.Interact, 1.0,
+            (mood, 0.9),
+            (BehaviorState.InteractEnd, 0.4));
     }
 
     public void Tick(double dt)
@@ -94,11 +97,11 @@ public sealed class PetController
             _interactionRemaining -= dt;
             if (_interactionRemaining <= 0)
             {
-                if (_followUp is { } next)
+                if (_pending.Count > 0)
                 {
+                    (BehaviorState next, double seconds) = _pending.Dequeue();
                     _behavior.OverrideState(next);
-                    _interactionRemaining = _followUpRemaining;
-                    _followUp = null;
+                    _interactionRemaining = seconds;
                 }
                 else
                 {
@@ -124,14 +127,49 @@ public sealed class PetController
     /// <summary>用户拖动结束后同步位置，并短暂停顿，避免刚放下就自己走开。</summary>
     public void NotifyUserMoved(double x, double y)
     {
-        _interactionRemaining = 0;
-        _followUp = null;
+        ClearInteraction();
         _behavior.PlaceAt(x, y);
         _pauseSeconds = 1.2;
         _view.MoveTo(_behavior.X, _behavior.Y);
     }
 
-    public void NotifyClicked() => _pauseSeconds = 0.8;
+    /// <summary>被点击：睡着/坐着时先吓一跳，否则播放"被点击"。</summary>
+    public void NotifyClicked()
+    {
+        BehaviorState reaction = _behavior.State is BehaviorState.Sleep or BehaviorState.Sit
+            ? BehaviorState.Surprised
+            : BehaviorState.Clicked;
+
+        EffectRequested?.Invoke(this,
+            reaction == BehaviorState.Surprised ? EffectKind.Sweat : EffectKind.Star);
+
+        BeginInteraction(reaction, 0.9);
+    }
+
+    /// <summary>被拎起（拖动开始）：受到惊吓。</summary>
+    public void NotifyPickedUp()
+    {
+        EffectRequested?.Invoke(this, EffectKind.Sweat);
+        BeginInteraction(BehaviorState.Startled, 0.5);
+    }
+
+    private void BeginInteraction(BehaviorState first, double seconds,
+        params (BehaviorState State, double Seconds)[] followUps)
+    {
+        _pending.Clear();
+        foreach (var step in followUps)
+            _pending.Enqueue(step);
+
+        _behavior.OverrideState(first);
+        _interactionRemaining = seconds;
+        _pauseSeconds = 0;
+    }
+
+    private void ClearInteraction()
+    {
+        _pending.Clear();
+        _interactionRemaining = 0;
+    }
 
     private string ClipFor(BehaviorState s)
         => s == BehaviorState.Walk

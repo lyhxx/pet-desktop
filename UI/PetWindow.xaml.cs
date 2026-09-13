@@ -29,13 +29,15 @@ public partial class PetWindow : Window, IPetView
     private const double SleepEffectInterval = 3.0;
     private const double OneShotHoldSeconds = 0.25;
 
-    /// <summary>这些剪辑会持续循环或由其它逻辑接管，不做"播完回待机"。</summary>
-    private static readonly HashSet<string> PersistentClips = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>
+    /// 这些待机小动作剪辑比行为状态短，播完后自动回到循环的 Idle，
+    /// 避免停在最后一帧看起来像"卡住"。互动表情与走路等由控制器接管，不在此列。
+    /// </summary>
+    private static readonly HashSet<string> AutoReturnClips = new(StringComparer.OrdinalIgnoreCase)
     {
-        AnimationClips.Idle, AnimationClips.Doze, AnimationClips.Blink,
-        AnimationClips.Walk, AnimationClips.WalkSmall, AnimationClips.Trot,
-        AnimationClips.MoveFast, AnimationClips.MoveBack, AnimationClips.Turn,
-        AnimationClips.Eat, AnimationClips.Sleep
+        AnimationClips.LookAround, AnimationClips.Stretch, AnimationClips.Groom,
+        AnimationClips.Tail, AnimationClips.Fidget, AnimationClips.Special,
+        AnimationClips.Curious
     };
 
     private double _anchorX = BaseAnchorX;
@@ -182,13 +184,14 @@ public partial class PetWindow : Window, IPetView
     }
 
     /// <summary>
-    /// 一次性动作（张望 / 理毛 / 停下等）播完后回到循环的待机，
+    /// 待机小动作（张望 / 理毛等）播完后回到循环的待机，
     /// 避免停在最后一帧看起来像"卡住"。
     /// </summary>
     private void UpdateOneShot(double dt)
     {
-        if (_animation.CurrentClipName is not { } clip ||
-            PersistentClips.Contains(clip) ||
+        if (_pressed ||
+            _animation.CurrentClipName is not { } clip ||
+            !AutoReturnClips.Contains(clip) ||
             !_animation.IsFinished)
         {
             _oneShotHold = 0;
@@ -576,7 +579,10 @@ public partial class PetWindow : Window, IPetView
         double dy = (current.Y - _pressScreen.Y) / dpi.DpiScaleY;
 
         if (!_dragging && Math.Abs(dx) + Math.Abs(dy) > DragThreshold)
+        {
             _dragging = true;
+            _controller.NotifyPickedUp();
+        }
 
         if (_dragging)
         {

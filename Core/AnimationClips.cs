@@ -13,9 +13,7 @@ public static class AnimationClips
     public const string LookAround = "LookAround";
     public const string Stretch = "Stretch";
     public const string Groom = "Groom";
-    public const string Curious = "Curious";
     public const string Tail = "Tail";
-    public const string Happy = "Happy";
     public const string Doze = "Doze";
     public const string Fidget = "Fidget";
     public const string Special = "Special";
@@ -31,12 +29,21 @@ public static class AnimationClips
     public const string Stop = "Stop";
     public const string StopAfterMove = "StopAfterMove";
 
-    // 待制作图集（Action / EatSleep）
+    // Action 图集（互动表情）
+    public const string Clicked = "Clicked";
+    public const string Petted = "Petted";
+    public const string Happy = "Happy";
+    public const string Curious = "Curious";
+    public const string Angry = "Angry";
+    public const string Shy = "Shy";
+    public const string Surprised = "Surprised";
+    public const string Wave = "Wave";
+    public const string Startled = "Startled";
+    public const string InteractEnd = "InteractEnd";
+
+    // 待制作图集（EatSleep）
     public const string Sleep = "Sleep";
     public const string Eat = "Eat";
-    public const string Petted = "Petted";
-    public const string Sad = "Sad";
-    public const string Angry = "Angry";
 
     public static string ForState(BehaviorState state) => state switch
     {
@@ -49,7 +56,6 @@ public static class AnimationClips
         BehaviorState.Sleep => Sleep,
         BehaviorState.Eat => Eat,
         BehaviorState.Happy => Happy,
-        BehaviorState.Sad => Sad,
         BehaviorState.Angry => Angry,
         BehaviorState.Curious => Curious,
         BehaviorState.Interact => Petted,
@@ -58,6 +64,12 @@ public static class AnimationClips
         BehaviorState.Tail => Tail,
         BehaviorState.Fidget => Fidget,
         BehaviorState.Special => Special,
+        BehaviorState.Clicked => Clicked,
+        BehaviorState.Shy => Shy,
+        BehaviorState.Surprised => Surprised,
+        BehaviorState.Wave => Wave,
+        BehaviorState.Startled => Startled,
+        BehaviorState.InteractEnd => InteractEnd,
         _ => Idle
     };
 
