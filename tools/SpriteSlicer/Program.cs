@@ -13,6 +13,12 @@ if (args.Length >= 2 && args[0] == "measure")
     return 0;
 }
 
+if (args.Length >= 2 && args[0] == "cleanup")
+{
+    Cleanup(args[1]);
+    return 0;
+}
+
 if (args.Length >= 3 && args[0] == "makeico")
 {
     MakeIco(args[1], args[2]);
@@ -45,6 +51,7 @@ using (var g = Graphics.FromImage(atlas))
 
 CleanAlpha(atlas, 40);
 CleanBoundaries(atlas, 8);
+RemoveTopStray(atlas, 16);
 NormalizeAnchors(atlas);
 
 Directory.CreateDirectory(Path.GetDirectoryName(atlasOut)!);
@@ -317,6 +324,113 @@ static void CleanBoundaries(Bitmap bmp, int margin)
             buffer[i + 1] = 0;
             buffer[i + 2] = 0;
             buffer[i + 3] = 0;
+        }
+    }
+
+    Marshal.Copy(buffer, 0, data.Scan0, bytes);
+    bmp.UnlockBits(data);
+}
+
+static void Cleanup(string path)
+{
+    // 就地在已加载的位图上处理，保存到临时文件后替换，避免 GDI+ 复制导致的像素改动。
+    string tmp = path + ".tmp.png";
+    using (var bmp = new Bitmap(path))
+    {
+        RemoveTopStray(bmp, 16);
+        bmp.Save(tmp, ImageFormat.Png);
+    }
+
+    File.Delete(path);
+    File.Move(tmp, path);
+    Console.WriteLine($"cleaned: {path}");
+}
+
+/// <summary>
+/// 去掉每个格子顶部与主体分离的杂块（AI 原图里相邻行溢出的脚 / 边角）。
+/// 只删「不是最大连通块、且触及顶部 band」的组件，保留爱心 / 问号 / Zzz 等悬浮元素。
+/// </summary>
+static void RemoveTopStray(Bitmap bmp, int band)
+{
+    Rectangle rect = new(0, 0, bmp.Width, bmp.Height);
+    BitmapData data = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+    int stride = data.Stride;
+    int bytes = stride * bmp.Height;
+    byte[] buffer = new byte[bytes];
+    Marshal.Copy(data.Scan0, buffer, 0, bytes);
+
+    bool[] visited = new bool[Cell * Cell];
+    int[] stack = new int[Cell * Cell];
+    var components = new List<List<int>>();
+
+    for (int r = 0; r < Grid; r++)
+    {
+        for (int c = 0; c < Grid; c++)
+        {
+            int ox = c * Cell, oy = r * Cell;
+            Array.Clear(visited, 0, visited.Length);
+            components.Clear();
+
+            for (int y = 0; y < Cell; y++)
+            {
+                for (int x = 0; x < Cell; x++)
+                {
+                    int idx = y * Cell + x;
+                    if (visited[idx]) continue;
+                    visited[idx] = true;
+                    if (buffer[(oy + y) * stride + (ox + x) * 4 + 3] <= 16) continue;
+
+                    var members = new List<int>();
+                    int sp = 0;
+                    stack[sp++] = idx;
+                    while (sp > 0)
+                    {
+                        int cur = stack[--sp];
+                        members.Add(cur);
+                        int cy = cur / Cell, cx = cur % Cell;
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                if (dx == 0 && dy == 0) continue;
+                                int ny = cy + dy, nx = cx + dx;
+                                if (ny < 0 || ny >= Cell || nx < 0 || nx >= Cell) continue;
+                                int ni = ny * Cell + nx;
+                                if (visited[ni]) continue;
+                                visited[ni] = true;
+                                if (buffer[(oy + ny) * stride + (ox + nx) * 4 + 3] <= 16) continue;
+                                stack[sp++] = ni;
+                            }
+                        }
+                    }
+                    components.Add(members);
+                }
+            }
+
+            if (components.Count < 2) continue;
+
+            int biggest = 0;
+            for (int i = 1; i < components.Count; i++)
+                if (components[i].Count > components[biggest].Count) biggest = i;
+
+            for (int i = 0; i < components.Count; i++)
+            {
+                if (i == biggest) continue;
+
+                int minY = Cell;
+                foreach (int m in components[i])
+                {
+                    int my = m / Cell;
+                    if (my < minY) minY = my;
+                }
+                if (minY >= band) continue;
+
+                foreach (int m in components[i])
+                {
+                    int p = (oy + m / Cell) * stride + (ox + m % Cell) * 4;
+                    buffer[p] = 0; buffer[p + 1] = 0; buffer[p + 2] = 0; buffer[p + 3] = 0;
+                }
+            }
         }
     }
 

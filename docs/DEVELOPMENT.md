@@ -230,7 +230,7 @@ AI 生成的每帧角色位置往往不一致，直接播放会左右滑动、�
 
 ## 5. 切图工具 SpriteSlicer
 
-位于 `tools/SpriteSlicer/`，三种模式：
+位于 `tools/SpriteSlicer/`，四种模式：
 
 ```bash
 # 1) 切图：输入 → 处理后图集 + 64 帧 + 预览
@@ -241,9 +241,15 @@ dotnet run --project tools/SpriteSlicer -- measure Assets/Pet/Pet_Idle.png
 
 # 3) 生成图标：多尺寸 .ico
 dotnet run --project tools/SpriteSlicer -- makeico Assets/app-icon.png Assets/app.ico
+
+# 4) 清理顶部杂块：就地修复已有图集
+dotnet run --project tools/SpriteSlicer -- cleanup Assets/Pet/Pet_Action.png
 ```
 
-切图流程（`NormalizeAnchors` 等）依次执行：**缩放到 2048×2048 → 清理低 alpha 噪点 → 清除格边界线 → 锚点归一化 → 保存图集 → 导出 64 帧 + 预览**。
+切图流程（`NormalizeAnchors` 等）依次执行：**缩放到 2048×2048 → 清理低 alpha 噪点 → 清除格边界线 → 清理顶部杂块 → 锚点归一化 → 保存图集 → 导出 64 帧 + 预览**。
+
+- **清理顶部杂块 `RemoveTopStray`**：AI 原图常把上一行角色的脚 / 边角压进下一行格子里，播放时会在头顶露出半截"脚"。该步骤按连通块处理，只删除「不是主体、且触及顶部 16px」的碎块，保留爱心 / 问号 / `Zzz` 等悬浮元素。
+- 已有图集可用 `dotnet run --project tools/SpriteSlicer -- cleanup Assets/Pet/<名称>.png` 就地修复。
 
 ### 5.1 图片尺寸不一样怎么办（重点）
 
